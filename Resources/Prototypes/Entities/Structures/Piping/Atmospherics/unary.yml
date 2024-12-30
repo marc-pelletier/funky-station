@@ -446,3 +446,65 @@
   - type: PowerSwitch
   - type: AtmosMonitoringConsoleDevice
     navMapBlip: Thermoregulator
+
+# Assmos - Bluespace Gas Vendor
+- type: entity
+  parent: [ BaseMachinePowered, ConstructibleMachine ]
+  id: GasBluespaceSender
+  name: bluespace gas sender
+  description: "Sends gases to the bluespace network to be shared with the connected vendors, who knows what's beyond!"
+  placement:
+    mode: SnapgridCenter
+  components:
+  - type: AtmosDevice
+  - type: Appearance
+  - type: PipeColorVisuals
+  - type: Rotatable
+  - type: AtmosPipeColor
+  - type: Sprite
+    sprite: Structures/Piping/Atmospherics/bluespacegassender.rsi
+    granularLayersRendering: true
+    snapCardinals: true
+    layers:
+    - state: off
+      map: [ "enum.PowerDeviceVisualLayers.Powered" ]
+    - state: panel
+      map: ["enum.WiresVisualLayers.MaintenancePanel"]
+    - state: pipe
+      map: [ "enum.PipeVisualLayers.Pipe" ]
+      renderingStrategy: Default
+  - type: GenericVisualizer
+    visuals:
+      enum.PowerDeviceVisuals.Powered:
+        enum.PowerDeviceVisualLayers.Powered:
+          True: { state: on }
+          False: { state: off }
+  # - type: Machine
+  #   board: BluespaceGasSenderMachineCircuitBoard
+  - type: ApcPowerReceiver
+    powerLoad: 10000
+  - type: Destructible
+    thresholds:
+    - trigger:
+        !type:DamageTrigger
+        damage: 200
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
+    - trigger:
+        !type:DamageTrigger
+        damage: 100
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
+      - !type:PlaySoundBehavior
+        sound:
+          collection: MetalBreak
+  - type: NodeContainer
+    nodes:
+      pipe:
+        !type:PipeNode
+        nodeGroupID: Pipe
+        pipeDirection: South
+  - type: Transform
+    noRot: false
