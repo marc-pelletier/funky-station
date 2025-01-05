@@ -50,3 +50,7 @@ device-net-id-apc = Apc
 device-net-id-atmos-devices = Atmos Devices
 device-net-id-reserved = Reserved
 
+# Assmos - Bluespace Gas Vendor 
+device-frequency-prototype-name-bluespace-gas = Bluespace Vendors
+device-address-prefix-bluespace-vendor = BGV-
+device-address-prefix-bluespace-sender = BGS-

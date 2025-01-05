@@ -461,6 +461,7 @@
   - type: PipeColorVisuals
   - type: Rotatable
   - type: AtmosPipeColor
+  - type: GasBluespaceSender
   - type: Sprite
     sprite: Structures/Piping/Atmospherics/bluespacegassender.rsi
     granularLayersRendering: true
@@ -479,8 +480,8 @@
         enum.PowerDeviceVisualLayers.Powered:
           True: { state: on }
           False: { state: off }
-  # - type: Machine
-  #   board: BluespaceGasSenderMachineCircuitBoard
+  - type: Machine
+    board: BluespaceGasSenderMachineCircuitBoard
   - type: ApcPowerReceiver
     powerLoad: 10000
   - type: Destructible
@@ -508,3 +509,20 @@
         pipeDirection: South
   - type: Transform
     noRot: false
+  - type: UserInterface
+    interfaces:
+      enum.BluespaceGasSenderUiKey.Key:
+        type: GasBluespaceSenderBoundUserInterface
+      enum.WiresUiKey.Key:
+        type: WiresBoundUserInterface
+  - type: ActivatableUI
+    inHandsOnly: false
+    key: enum.BluespaceGasSenderUiKey.Key
+  - type: DeviceNetwork
+    prefix: device-address-prefix-bluespace-sender
+    sendBroadcastAttemptEvent: true
+  - type: DeviceList
+  - type: DeviceNetworkRequiresPower
+  - type: AccessReader
+    access: [["Atmospherics"]]
+  - type: WiredNetworkConnection

@@ -1,0 +1,40 @@
+- type: entity
+  id: GasBluespaceVendor
+  name: bluespace gas vender
+  description: "Sells gas tanks with custom mixes for all the family!"
+  placement:
+    mode: SnapgridCenter
+    snap:
+    - Wallmount
+  components:
+  - type: WallMount
+    arc: 175
+  - type: Sprite
+    sprite: Structures/Wallmounts/bluespace_vendor.rsi
+    state: bluespace_vendor_off
+  - type: Appearance
+  - type: InteractionOutline
+  - type: Clickable
+  - type: Transform
+    anchored: true
+  # - type: GasBluespaceVendor
+  - type: Damageable
+    damageContainer: StructuralInorganic
+    damageModifierSet: Metallic
+  - type: Destructible
+    thresholds:
+    - trigger:
+        !type:DamageTrigger
+        damage: 50
+      behaviors:
+        - !type:DoActsBehavior
+          acts: [ "Destruction" ]
+  # - type: UserInterface
+  #   interfaces:
+  #     enum.BluespaceGasSenderUiKey.Key:
+  #       type: GasBluespaceSenderBoundUserInterface
+  # - type: ActivatableUI
+  #   inHandsOnly: false
+  #   key: enum.BluespaceGasSenderUiKey.Key
+  - type: DeviceNetwork
+    prefix: device-address-prefix-bluespace-vendor
