@@ -102,8 +102,8 @@
   - type: Appearance
   - type: PipeColorVisuals
   - type: NodeContainer
-  # Goobstation - Allow device-on-pipe stacking
-  # - type: PipeRestrictOverlap
+  - type: AtmosPipeLayer
+  - type: PipeRestrictOverlap
   - type: AtmosUnsafeUnanchor
   - type: AtmosPipeColor
   - type: AtmosMonitoringConsoleDevice
