@@ -61,6 +61,11 @@
         !type:PipeNode
         nodeGroupID: Pipe
         pipeDirection: South
+  - type: AtmosPipeLayer
+    layerVisualStates:
+    - pipeStraight0
+    - pipeStraight
+    - pipeStraight2
 
 - type: entity
   parent: GasBinaryBase
@@ -89,6 +94,8 @@
       map: [ "enum.PipeVisualLayers.Pipe" ]
     - state: pumpPressure
       map: [ "enum.SubfloorLayers.FirstLayer", "enabled" ]
+  - type: AtmosPipeLayer
+    offsetAboveFloorLayers: true
   - type: Appearance
   - type: GenericVisualizer
     visuals:
@@ -149,6 +156,8 @@
           map: [ "enum.PipeVisualLayers.Pipe" ]
         - state: pumpVolume
           map: [ "enum.SubfloorLayers.FirstLayer", "enabled" ]
+    - type: AtmosPipeLayer
+      offsetAboveFloorLayers: true
     - type: Appearance
     - type: GenericVisualizer
       visuals:
@@ -207,6 +216,8 @@
           map: [ "enum.PipeVisualLayers.Pipe" ]
         - state: pumpPassiveGate
           map: [ "enum.SubfloorLayers.FirstLayer" ]
+    - type: AtmosPipeLayer
+      offsetAboveFloorLayers: true
     - type: Appearance
     - type: PipeColorVisuals
     - type: GasPassiveGate
@@ -246,6 +257,8 @@
           map: [ "enum.PipeVisualLayers.Pipe" ]
         - state: pumpManualValve
           map: [ "enum.SubfloorLayers.FirstLayer", "enabled" ]
+    - type: AtmosPipeLayer
+      offsetAboveFloorLayers: true
     - type: Appearance
     - type: GenericVisualizer
       visuals:
@@ -303,6 +316,8 @@
       map: [ "enum.PipeVisualLayers.Pipe" ]
     - state: pumpSignalValve
       map: [ "enum.SubfloorLayers.FirstLayer", "enabled" ]
+  - type: AtmosPipeLayer
+    offsetAboveFloorLayers: true
   - type: Appearance
   - type: GenericVisualizer
     visuals:

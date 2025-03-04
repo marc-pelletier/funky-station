@@ -73,6 +73,11 @@
           nodeGroupID: Pipe
           pipeDirection: South
     - type: CollideOnAnchor
+    - type: AtmosPipeLayer
+      layerVisualStates:
+      - pipeHalf0
+      - pipeHalf
+      - pipeHalf2
     - type: DeviceRestrictOverlap # Funky
 
 - type: entity
