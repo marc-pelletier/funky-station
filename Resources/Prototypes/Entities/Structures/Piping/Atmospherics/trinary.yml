@@ -56,6 +56,11 @@
           !type:PipeNode
           nodeGroupID: Pipe
           pipeDirection: South
+    - type: AtmosPipeLayers
+      layerVisualStates:
+      - pipeTrinaryConnectors0
+      - pipeTrinaryConnectors
+      - pipeTrinaryConnectors2
     - type: DeviceRestrictOverlap # Funky
 
 - type: entity
@@ -253,7 +258,7 @@
     node: mixerflipped
 
 - type: entity
-  parent: GasPipeBase
+  parent: GasTrinaryBase
   id: PressureControlledValve
   name: pneumatic valve
   description: A bidirectional valve controlled by pressure. Opens if the output pipe is lower than the pressure of the control pipe by 101.325 kPa.
