@@ -74,7 +74,7 @@
           pipeDirection: South
     - type: CollideOnAnchor
     - type: AtmosPipeLayers
-      pipeLayersLocked: true
+      pipeLayersLocked: false
     - type: DeviceRestrictOverlap # Funky
 
 - type: entity
@@ -102,16 +102,16 @@
       noRot: true
       layers:
         - sprite: Structures/Piping/Atmospherics/pipe.rsi
-          state: pipeHalf
+          state: pipeUnaryConnectors
           map: [ "enum.PipeVisualLayers.Pipe" ]
         - state: vent_off
           map: [ "enabled", "enum.SubfloorLayers.FirstLayer" ]
     - type: AtmosPipeLayers
       pipeLayersLocked: false
       layerVisualStates:
-      - pipeHalf
-      - pipeHalf1
-      - pipeHalf2
+      - pipeUnaryConnectors
+      - pipeUnaryConnectors1
+      - pipeUnaryConnectors2
     - type: Appearance
     - type: PipeColorVisuals
     - type: GenericVisualizer
@@ -159,16 +159,16 @@
       noRot: true
       layers:
         - sprite: Structures/Piping/Atmospherics/pipe.rsi
-          state: pipeHalf
+          state: pipeUnaryConnectors
           map: [ "enum.PipeVisualLayers.Pipe" ]
         - state: vent_passive
           map: [ "enum.SubfloorLayers.FirstLayer" ]
     - type: AtmosPipeLayers
       pipeLayersLocked: false
       layerVisualStates:
-      - pipeHalf
-      - pipeHalf1
-      - pipeHalf2
+      - pipeUnaryConnectors
+      - pipeUnaryConnectors1
+      - pipeUnaryConnectors2
     - type: Appearance
     - type: PipeColorVisuals
     - type: GasPassiveVent
@@ -206,16 +206,16 @@
       noRot: true
       layers:
         - sprite: Structures/Piping/Atmospherics/pipe.rsi
-          state: pipeHalf
+          state: pipeUnaryConnectors
           map: [ "enum.PipeVisualLayers.Pipe" ]
         - state: scrub_off
           map: [ "enabled", "enum.SubfloorLayers.FirstLayer" ]
     - type: AtmosPipeLayers
       pipeLayersLocked: false
       layerVisualStates:
-      - pipeHalf
-      - pipeHalf1
-      - pipeHalf2
+      - pipeUnaryConnectors
+      - pipeUnaryConnectors1
+      - pipeUnaryConnectors2
     - type: Appearance
     - type: PipeColorVisuals
     - type: GenericVisualizer
@@ -267,6 +267,13 @@
           shader: unshaded
           map: [ "enum.LightLayers.Unshaded" ]
           color: "#990000"
+    - type: AtmosPipeLayers
+      pipeLayersLocked: false
+      layerVisualStates:
+      - pipeUnaryConnectors
+      - pipeUnaryConnectors1
+      - pipeUnaryConnectors2
+    - type: Appearance 
     - type: GenericVisualizer
       visuals:
        # toggle color of the unshaded light:
@@ -274,7 +281,6 @@
          enum.LightLayers.Unshaded:
            True: { color: "#5eff5e" }
            False: { color: "#990000" }
-    - type: Appearance
     - type: PipeColorVisuals
     - type: GasOutletInjector
     - type: Construction
@@ -301,6 +307,11 @@
     - type: Sprite
       sprite: Structures/Piping/Atmospherics/thermomachine.rsi
       snapCardinals: true
+    - type: AtmosPipeLayers
+      layerVisualStates:
+      - pipe
+      - pipe1
+      - pipe2
     - type: Appearance
     - type: PipeColorVisuals
     - type: Rotatable
@@ -484,6 +495,12 @@
       map: ["enum.SolutionContainerLayers.Fill"]
       visible: false
     - state: trans
+  - type: AtmosPipeLayers
+    layerVisualStates:
+    - pipe
+    - pipe1
+    - pipe2
+  - type: Appearance    
   - type: GenericVisualizer
     visuals:
       enum.PowerDeviceVisuals.Powered:
@@ -493,7 +510,6 @@
   - type: SolutionContainerVisuals
     maxFillLevels: 7
     fillBaseName: fill-
-  - type: Appearance
   - type: PipeColorVisuals
   - type: Rotatable
   - type: GasCondenser

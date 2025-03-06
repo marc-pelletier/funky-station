@@ -22,4 +22,5 @@ public enum PipeVisualLayers : byte
 {
     Pipe,
     Connector,
+    Device,
 }

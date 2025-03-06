@@ -8,7 +8,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later AND MIT
 
 - type: entity
-  parent: [AirSensorBase, GasPipeBase]
+  parent: [AirSensorBase, GasBinaryBase]
   id: GasPipeSensor
   name: gas pipe sensor
   description: Reports on the status of the gas in the attached pipe network.
@@ -27,6 +27,10 @@
     - map: [ "enum.PowerDeviceVisualLayers.Powered" ]
       state: lights
       shader: unshaded
+  - type: AtmosPipeLayers
+    layersToOffset:
+    - "base"
+    - "enum.PowerDeviceVisualLayers.Powered"
   - type: Appearance
   - type: GenericVisualizer
     visuals:
