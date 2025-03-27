@@ -73,8 +73,6 @@
           nodeGroupID: Pipe
           pipeDirection: South
     - type: CollideOnAnchor
-    - type: AtmosPipeLayers
-      pipeLayersLocked: false
     - type: DeviceRestrictOverlap # Funky
 
 - type: entity
@@ -106,12 +104,6 @@
           map: [ "enum.PipeVisualLayers.Pipe" ]
         - state: vent_off
           map: [ "enabled", "enum.SubfloorLayers.FirstLayer" ]
-    - type: AtmosPipeLayers
-      pipeLayersLocked: false
-      layerVisualStates:
-      - pipeUnaryConnectors
-      - pipeUnaryConnectors1
-      - pipeUnaryConnectors2
     - type: Appearance
     - type: PipeColorVisuals
     - type: GenericVisualizer
@@ -163,12 +155,6 @@
           map: [ "enum.PipeVisualLayers.Pipe" ]
         - state: vent_passive
           map: [ "enum.SubfloorLayers.FirstLayer" ]
-    - type: AtmosPipeLayers
-      pipeLayersLocked: false
-      layerVisualStates:
-      - pipeUnaryConnectors
-      - pipeUnaryConnectors1
-      - pipeUnaryConnectors2
     - type: Appearance
     - type: PipeColorVisuals
     - type: GasPassiveVent
@@ -210,12 +196,6 @@
           map: [ "enum.PipeVisualLayers.Pipe" ]
         - state: scrub_off
           map: [ "enabled", "enum.SubfloorLayers.FirstLayer" ]
-    - type: AtmosPipeLayers
-      pipeLayersLocked: false
-      layerVisualStates:
-      - pipeUnaryConnectors
-      - pipeUnaryConnectors1
-      - pipeUnaryConnectors2
     - type: Appearance
     - type: PipeColorVisuals
     - type: GenericVisualizer
@@ -267,12 +247,6 @@
           shader: unshaded
           map: [ "enum.LightLayers.Unshaded" ]
           color: "#990000"
-    - type: AtmosPipeLayers
-      pipeLayersLocked: false
-      layerVisualStates:
-      - pipeUnaryConnectors
-      - pipeUnaryConnectors1
-      - pipeUnaryConnectors2
     - type: Appearance 
     - type: GenericVisualizer
       visuals:
@@ -307,11 +281,6 @@
     - type: Sprite
       sprite: Structures/Piping/Atmospherics/thermomachine.rsi
       snapCardinals: true
-    - type: AtmosPipeLayers
-      layerVisualStates:
-      - pipe
-      - pipe1
-      - pipe2
     - type: Appearance
     - type: PipeColorVisuals
     - type: Rotatable
@@ -495,11 +464,6 @@
       map: ["enum.SolutionContainerLayers.Fill"]
       visible: false
     - state: trans
-  - type: AtmosPipeLayers
-    layerVisualStates:
-    - pipe
-    - pipe1
-    - pipe2
   - type: Appearance    
   - type: GenericVisualizer
     visuals:

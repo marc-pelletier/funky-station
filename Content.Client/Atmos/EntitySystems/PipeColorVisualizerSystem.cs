@@ -23,3 +23,8 @@ public sealed class PipeColorVisualizerSystem : VisualizerSystem<PipeColorVisual
         }
     }
 }
+
+public enum PipeVisualLayers : byte
+{
+    Pipe,
+}
