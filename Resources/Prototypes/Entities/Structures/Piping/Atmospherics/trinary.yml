@@ -253,7 +253,7 @@
     node: mixerflipped
 
 - type: entity
-  parent: GasTrinaryBase
+  parent: GasPipeBase
   id: PressureControlledValve
   name: pneumatic valve
   description: A bidirectional valve controlled by pressure. Opens if the output pipe is lower than the pressure of the control pipe by 101.325 kPa.
@@ -267,8 +267,6 @@
     - type: SubFloorHide
       blockInteractions: false
       blockAmbience: false
-      visibleLayers:
-      - enum.SubfloorLayers.FirstLayer
     - type: NodeContainer
       nodes:
         inlet:
