@@ -286,6 +286,7 @@
     - type: Rotatable
     - type: GasThermoMachine
     - type: AtmosPipeColor
+    - type: AtmosPipeLayers
     - type: AtmosDevice
     - type: UserInterface
       interfaces:
