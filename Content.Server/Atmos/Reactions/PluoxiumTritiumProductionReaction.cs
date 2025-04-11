@@ -11,30 +11,30 @@ namespace Content.Server.Atmos.Reactions;
 ///     Consumes a tiny amount of tritium to convert CO2 and oxygen to pluoxium.
 /// </summary>
 [UsedImplicitly]
-public sealed partial class PluoxiumProductionReaction : IGasReactionEffect
+public sealed partial class PluoxiumTritiumProductionReaction : IGasReactionEffect
 {
     public ReactionResult React(GasMixture mixture, IGasMixtureHolder? holder, AtmosphereSystem atmosphereSystem, float heatScale)
     {
-        var initO2 = mixture.GetMoles(Gas.Oxygen);
-        var initCO2 = mixture.GetMoles(Gas.CarbonDioxide);
-        var initTrit = mixture.GetMoles(Gas.Tritium);
+        float initO2 = mixture.GetMoles(Gas.Oxygen);
+        float initCO2 = mixture.GetMoles(Gas.CarbonDioxide);
+        float initTrit = mixture.GetMoles(Gas.Tritium);
 
         float[] efficiencies = {5f, initCO2, initO2 * 2f, initTrit * 100f};
         Array.Sort(efficiencies);
-        var producedAmount = efficiencies[0];
+        float producedAmount = efficiencies[0];
 
-        var co2Removed = producedAmount;
-        var oxyRemoved = producedAmount * 0.5f;
-        var tritRemoved = producedAmount * 0.01f;
+        float co2Removed = producedAmount;
+        float oxyRemoved = producedAmount * 0.5f;
+        float tritRemoved = producedAmount * 0.01f;
 
         if (producedAmount <= 0 ||
             co2Removed > initCO2 ||
-            oxyRemoved * 0.5 > initO2 ||
-            tritRemoved * 0.01 > initTrit)
+            oxyRemoved > initO2 ||
+            tritRemoved > initTrit)
             return ReactionResult.NoReaction;
 
-        var pluoxProduced = producedAmount;
-        var hydroProduced = producedAmount * 0.01f;
+        float pluoxProduced = producedAmount;
+        float hydroProduced = producedAmount * 0.01f;
 
         mixture.AdjustMoles(Gas.CarbonDioxide, -co2Removed);
         mixture.AdjustMoles(Gas.Oxygen, -oxyRemoved);
@@ -42,8 +42,8 @@ public sealed partial class PluoxiumProductionReaction : IGasReactionEffect
         mixture.AdjustMoles(Gas.Pluoxium, pluoxProduced);
         mixture.AdjustMoles(Gas.Hydrogen, hydroProduced);
 
-        var energyReleased = producedAmount * Atmospherics.PluoxiumProductionEnergy;
-        var heatCap = atmosphereSystem.GetHeatCapacity(mixture, true);
+        float energyReleased = producedAmount * Atmospherics.PluoxiumProductionEnergy;
+        float heatCap = atmosphereSystem.GetHeatCapacity(mixture, true);
         if (heatCap > Atmospherics.MinimumHeatCapacity)
             mixture.Temperature = Math.Max((mixture.Temperature * heatCap + energyReleased) / heatCap, Atmospherics.TCMB);
 

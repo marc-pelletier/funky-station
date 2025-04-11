@@ -3,16 +3,20 @@ using Content.Server.Radiation.Components;
 using Content.Server.Radiation.Events;
 using Content.Shared.Radiation.Components;
 using Content.Shared.Radiation.Systems;
+using Robust.Shared.GameObjects;
 using Robust.Shared.Collections;
 using Robust.Shared.Map.Components;
 using Robust.Shared.Timing;
 using Robust.Shared.Utility;
+using Robust.Shared.Map;
+using Robust.Shared.Maths;
 
 namespace Content.Server.Radiation.Systems;
 
 // main algorithm that fire radiation rays to target
 public partial class RadiationSystem
 {
+    [Dependency] private readonly IEntityManager _entityManager = default!;
     private List<Entity<MapGridComponent>> _grids = new();
 
     private readonly record struct SourceData(
@@ -23,6 +27,43 @@ public partial class RadiationSystem
         public EntityUid? GridUid => Entity.Comp2.GridUid;
         public float Slope => Entity.Comp1.Slope;
         public TransformComponent Transform => Entity.Comp2;
+    }
+
+    public float GetRadiationAtTile(EntityUid gridUid, Vector2i tilePos, MapGridComponent gridComp)
+    {
+        var gridXform = _entityManager.GetComponent<TransformComponent>(gridUid);
+        var localPos = new Vector2(tilePos.X + 0.5f, tilePos.Y + 0.5f) * gridComp.TileSize; // Center of tile
+        var worldPos = _transform.ToMapCoordinates(new EntityCoordinates(gridUid, localPos)).Position;
+        float totalRads = 0f;
+
+        var sources = _entityManager.EntityQueryEnumerator<RadiationSourceComponent, TransformComponent>();
+        while (sources.MoveNext(out var uid, out var source, out var xform))
+        {
+            if (!source.Enabled)
+                continue;
+
+            var sourceWorldPos = _transform.GetWorldPosition(xform);
+            var intensity = source.Intensity * _stack.GetCount(uid);
+            intensity = GetAdjustedRadiationIntensity(uid, intensity);
+
+            if (xform.MapID != gridXform.MapID)
+                continue;
+
+            var dir = worldPos - sourceWorldPos;
+            var dist = dir.Length();
+            if (dist > GridcastMaxDistance)
+                continue;
+
+            var rads = intensity - source.Slope * dist;
+            if (rads < MinIntensity)
+                continue;
+
+            var ray = new RadiationRay(gridXform.MapID, uid, sourceWorldPos, gridUid, worldPos, rads);
+            Gridcast((gridUid, gridComp, gridXform), ref ray, false, xform, gridXform);
+            totalRads += ray.Rads;
+        }
+
+        return totalRads;
     }
 
     private void UpdateGridcast()

@@ -167,7 +167,7 @@
   - !type:NitriumDecompositionReaction {}
 
 - type: gasReaction
-  id: PluoxiumProduction
+  id: PluoxiumTritiumProduction
   priority: 3
   minimumTemperature: 50.0
   maximumTemperature: 273.15
@@ -185,7 +185,28 @@
   - 0     # healium
   - 0     # nitrium
   effects:
-  - !type:PluoxiumProductionReaction {}
+  - !type:PluoxiumTritiumProductionReaction {}
+
+- type: gasReaction
+  id: PluoxiumRadiationProduction
+  priority: 3
+  minimumTemperature: 50.0
+  maximumTemperature: 273.15
+  minimumRequirements:
+  - 1     # oxygen
+  - 0     # nitrogen
+  - 1     # carbon dioxide
+  - 0     # plasma
+  - 0     # tritium
+  - 0     # vapor
+  - 0     # miasma
+  - 0     # n2o
+  - 0     # frezon
+  - 0     # bz
+  - 0     # healium
+  - 0     # nitrium
+  effects:
+  - !type:PluoxiumRadiationProductionReaction {}
 
 - type: gasReaction
   id: MetalHydrogenReaction
