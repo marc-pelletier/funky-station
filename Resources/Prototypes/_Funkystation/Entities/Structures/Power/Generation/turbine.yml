@@ -1,0 +1,64 @@
+- type: entity
+  id: TurbineBase
+  abstract: true
+  placement:
+    mode: SnapgridCenter
+  components:
+  - type: InteractionOutline
+  - type: Anchorable
+  - type: Rotatable
+  - type: Physics
+    bodyType: Static
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeAabb
+          bounds: "-0.45,-0.45,0.45,0.45"
+        density: 190
+        mask:
+        - MachineMask
+        layer:
+        - MachineLayer
+  - type: Transform
+    anchored: true
+    noRot: false
+  - type: Pullable
+  - type: Clickable
+  - type: Appearance
+  - type: AtmosDevice
+
+- type: entity
+  parent: TurbineBase
+  id: TurbineCompressor
+  name: turbine compressor
+  description: The input side of a turbine generator, pulls in and compresses gases.
+  components:
+  - type: Sprite
+    sprite: _Funkystation/Structures/Power/Generation/turbine.rsi
+    state: inlet_compressor
+  - type: TurbineCompressor
+
+- type: entity
+  parent: TurbineBase
+  id: TurbineCoreRotor
+  name: turbine core rotor
+  description: The central part of a turbine generator, processes gases and generates power.
+  components:
+  - type: Sprite
+    sprite: _Funkystation/Structures/Power/Generation/turbine.rsi
+    state: core_rotor
+  - type: TurbineRotor
+  - type: PowerSupplier
+    supplyVoltage: High
+
+- type: entity
+  parent: TurbineBase
+  id: TurbineOutlet
+  name: turbine outlet
+  description: The output side of a turbine generator, expels processed gases.
+  components:
+  - type: Sprite
+    sprite: _Funkystation/Structures/Power/Generation/turbine.rsi
+    state: turbine_outlet
+  - type: TurbineOutlet
