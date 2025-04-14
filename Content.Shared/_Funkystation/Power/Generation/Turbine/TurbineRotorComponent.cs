@@ -25,20 +25,23 @@ public sealed partial class TurbineRotorComponent : Component
     public float ProducedEnergy { get; set; }
 
     [DataField]
-    public float Damage { get; set; }
-
-    [DataField]
-    public float DamageArchived { get; set; }
-
-    [DataField]
-    public float MaxAllowedRpm { get; set; }
-
-    [DataField]
-    public float MaxAllowedTemperature { get; set; }
-
-    [DataField]
     public bool AllPartsConnected { get; set; }
+
+    [DataField]
+    public EntityUid? CompressorUid { get; set; }
+
+    [DataField]
+    public EntityUid? OutletUid { get; set; }
 
     [ViewVariables]
     public GasMixture RotorGasMix = new() { Volume = 3000f };
+
+    [DataField]
+    public float CompressorWork { get; set; }
+
+    [DataField]
+    public float CompressorPressure { get; set; }
+
+    [DataField]
+    public float CompressorIntakeRegulator { get; set; } = 0.5f;
 }

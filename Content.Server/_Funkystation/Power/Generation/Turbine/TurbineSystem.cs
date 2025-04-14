@@ -1,16 +1,11 @@
 using Content.Server.Atmos;
 using Content.Server.Atmos.EntitySystems;
-using Content.Server.Atmos.Components;
 using Content.Server.Power.Components;
-using Content.Server.NodeContainer.EntitySystems;
 using Content.Shared.Atmos;
 using Robust.Server.GameObjects;
 using Robust.Shared.Map;
-using Robust.Shared.Timing;
 using Content.Shared._Funkystation.Power.Generation.Turbine;
 using Content.Server.Atmos.Piping.Components;
-using Robust.Shared.Map.Components;
-using Content.Shared.Atmos.Components;
 
 namespace Content.Server.Turbine;
 
@@ -19,10 +14,11 @@ public sealed class TurbineSystem : EntitySystem
     [Dependency] private readonly AtmosphereSystem _atmos = default!;
     [Dependency] private readonly IMapManager _map = default!;
     [Dependency] private readonly TransformSystem _transform = default!;
+    [Dependency] private readonly GasTileOverlaySystem _gasOverlaySystem = default!;
 
     // SS13 constants
     private const float RpmConversion = 15f;
-    private const float EnergyRectificationMultiplier = 0.25f;
+    private const float EnergyRectificationMultiplier = 10.25f;
     private const float WorkConversionMultiplier = 0.01f;
     private const float HeatConversionMultiplier = 0.005f;
     private const float CompressorStatorInteractionMultiplier = 0.15f;
@@ -50,323 +46,257 @@ public sealed class TurbineSystem : EntitySystem
         UpdateConnections(uid, comp);
     }
 
-    private void OnAtmosUpdate(EntityUid uid, TurbineRotorComponent rotor, AtmosDeviceUpdateEvent args)
+    private void OnAtmosUpdate(EntityUid uid, TurbineRotorComponent rotor, ref AtmosDeviceUpdateEvent args)
     {
-        // Only process if all parts are connected
-        if (!rotor.AllPartsConnected)
-        {
-            if (TryComp<PowerSupplierComponent>(uid, out var powerSupplier))
-            {
-                powerSupplier.Enabled = false;
-                powerSupplier.MaxSupply = 0f;
-            }
+        if (!TryComp<PowerSupplierComponent>(uid, out var powerSupplier))
             return;
-        }
 
-        // Find Compressor and Outlet
-        if (!TryComp<TransformComponent>(uid, out var rotorXform) || !rotorXform.Anchored || !rotorXform.GridUid.HasValue)
+        if (!rotor.AllPartsConnected || !EntityManager.EntityExists(rotor.CompressorUid) || !EntityManager.EntityExists(rotor.OutletUid))
         {
             rotor.AllPartsConnected = false;
-            if (TryComp<PowerSupplierComponent>(uid, out var powerSupplier))
-            {
-                powerSupplier.Enabled = false;
-                powerSupplier.MaxSupply = 0f;
-            }
+            rotor.CompressorUid = null;
+            rotor.OutletUid = null;
+            powerSupplier.Enabled = false;
+            powerSupplier.MaxSupply = 0f;
             return;
         }
 
-        var rotorMapCoords = _transform.GetMapCoordinates(uid);
-        if (!_map.TryFindGridAt(rotorMapCoords, out var gridUid, out var gridComp))
+        // Get input tile mixture
+        var inputTile = GetTile(rotor.CompressorUid!.Value);
+        if (!_map.TryFindGridAt(inputTile, out var gridUid, out var gridComp))
+            return;
+        var inputTilePos = gridComp.WorldToTile(inputTile.Position);
+        var inputMix = _atmos.GetTileMixture(gridUid, null, inputTilePos, true);
+        if (inputMix is not { TotalMoles: > 0 })
+            return;
+
+        if (!TryComp<TurbineCompressorComponent>(rotor.CompressorUid!.Value, out var compressorComp))
+            return;
+
+        if (!TryComp<TurbineOutletComponent>(rotor.OutletUid!.Value, out var outletComp))
+            return;
+
+        var compressorMix = compressorComp.CompressorGasMix;
+        var rotorMix = rotor.RotorGasMix;
+        var outletMix = outletComp.OutletGasMix;
+
+        var temperature = CompressGases(inputMix, compressorMix, rotor);
+        var compressorPressure = compressorMix.Pressure;
+        var rotorWork = TransferGases(compressorMix, rotorMix, rotor.CompressorWork);
+        var turbineWork = TransferGases(rotorMix, outletMix, Math.Abs(rotorWork));
+
+        // Get output tile mixture
+        var outputTile = GetTile(rotor.OutletUid!.Value);
+        if (!_map.TryFindGridAt(outputTile, out gridUid, out gridComp))
+            return;
+        var outputTilePos = gridComp.WorldToTile(outputTile.Position);
+        var outputTileMix = _atmos.GetTileMixture(gridUid, null, outputTilePos, true);
+        if (outputTileMix is null)
+            return;
+
+        // Expel gas from outlet
+        var gasExpelled = ExpelGases(outletMix, outputTileMix, outletMix.Pressure);
+        if (!gasExpelled)
         {
-            rotor.AllPartsConnected = false;
-            if (TryComp<PowerSupplierComponent>(uid, out var powerSupplier))
-            {
-                powerSupplier.Enabled = false;
-                powerSupplier.MaxSupply = 0f;
-            }
+            rotor.Rpm = 0f;
+            rotor.ProducedEnergy = 0f;
             return;
         }
 
-        // Calculate positions
-        var rotation = rotorXform.LocalRotation;
-        var rotorPos = gridComp.WorldToTile(rotorMapCoords.Position);
-        var compressorPos = rotorPos - rotation.GetCardinalDir().ToIntVec(); // Compressor at 180°
-        var outletPos = rotorPos + rotation.GetCardinalDir().ToIntVec();     // Outlet forward
+        // Calculate final work and RPM
+        var ejectedPressure = Math.Max(outletMix.Pressure, MinimumTurbinePressure);
+        compressorPressure = Math.Max(compressorPressure, MinimumTurbinePressure);
+        var workDone = outletMix.TotalMoles * Atmospherics.R * outletMix.Temperature * MathF.Log(Math.Max(compressorPressure / ejectedPressure, 1f)) * WorkConversionMultiplier;
+        workDone = Math.Max(workDone - rotor.CompressorWork * CompressorStatorInteractionMultiplier - turbineWork, 0f);
 
-        // Find Compressor
-        EntityUid? compressorEnt = null;
-        TurbineCompressorComponent? compressorComp = null;
-        foreach (var ent in gridComp.GetAnchoredEntities(compressorPos))
-        {
-            if (TryComp<TurbineCompressorComponent>(ent, out var comp) &&
-                TryComp<TransformComponent>(ent, out var xform) &&
-                xform.Anchored &&
-                xform.LocalRotation.EqualsApprox(rotation))
-            {
-                compressorEnt = ent;
-                compressorComp = comp;
-                break;
-            }
-        }
+        // Calculate RPM
+        var rpm = workDone / RpmConversion;
+        rotor.Rpm = MathF.Floor(Math.Min(rpm, rotor.MaxRpm));
 
-        // Find Outlet
-        EntityUid? outletEnt = null;
-        TurbineOutletComponent? outletComp = null;
-        foreach (var ent in gridComp.GetAnchoredEntities(outletPos))
-        {
-            if (TryComp<TurbineOutletComponent>(ent, out var comp) &&
-                TryComp<TransformComponent>(ent, out var xform) &&
-                xform.Anchored &&
-                xform.LocalRotation.EqualsApprox(rotation))
-            {
-                outletEnt = ent;
-                outletComp = comp;
-                break;
-            }
-        }
+        Console.WriteLine("compressorPressure: " + compressorPressure);
+        Console.WriteLine("ejectedPressure: " + ejectedPressure);
+        Console.WriteLine("outletMix.TotalMoles: " + outletMix.TotalMoles);
+        Console.WriteLine("outletMix.Temperature: " + outletMix.Temperature);
+        Console.WriteLine("rotor.CompressorWork: " + rotor.CompressorWork);
+        Console.WriteLine("rotorWork: " + rotorWork);
+        Console.WriteLine("turbineWork: " + turbineWork);
+        Console.WriteLine("workDone: " + workDone);
 
-        // Validate parts
-        if (!compressorEnt.HasValue || !outletEnt.HasValue || compressorComp == null || outletComp == null)
-        {
-            rotor.AllPartsConnected = false;
-            return;
-        }
+        // Update power supply
+        Console.WriteLine("rpm is " + rotor.Rpm);
+        powerSupplier.Enabled = rotor.Rpm > 0;
+        powerSupplier.MaxSupply = rotor.Rpm * EnergyRectificationMultiplier; // Convert RPM to power
+        Console.WriteLine("max supply is " + powerSupplier.MaxSupply);
 
-        // Step 1: Compressor pulls from input tile
-        var inputCoords = GetInputTile(compressorEnt.Value);
-        var inputTile = gridComp.WorldToTile(inputCoords.Position);
-        GridAtmosphereComponent? gridAtmosComp = null;
-        TryComp<GridAtmosphereComponent>(gridUid, out gridAtmosComp);
-        var gridEnt = (gridUid, gridAtmosComp, (GasTileOverlayComponent?)null);
-        MapAtmosphereComponent? mapAtmosComp = null;
-        TryComp<MapAtmosphereComponent>(rotorXform.MapUid!.Value, out mapAtmosComp);
-        var mapEnt = (rotorXform.MapUid!.Value, mapAtmosComp);
-        var inputMix = _atmos.GetTileMixture(gridEnt, mapEnt, inputTile, excite: true);
-        if (inputMix == null || inputMix.TotalMoles <= 0f)
-            return;
-
-        float intakeRegulator = 0.5f; 
-        float compressorWork = TransferGases(inputMix, compressorComp.CompressorGasMix, 0f, intakeRegulator);
-        float compressorPressure = MathF.Max(compressorComp.CompressorGasMix.Pressure, MinimumTurbinePressure);
-
-        // Step 2: Rotor transfers from Compressor
-        float rotorWork = TransferGases(compressorComp.CompressorGasMix, rotor.RotorGasMix, compressorWork);
-
-        // Step 3: Outlet transfers from Rotor
-        float turbineWork = TransferGases(rotor.RotorGasMix, outletComp.OutletGasMix, MathF.Abs(rotorWork));
-
-        // Step 4: Outlet expels to output tile
-        var outputCoords = GetOutputTile(outletEnt.Value);
-        var outputTile = gridComp.WorldToTile(outputCoords.Position);
-        var outputMix = _atmos.GetTileMixture(gridEnt, mapEnt, outputTile, excite: true);
-        if (outputMix == null)
-            return;
-
-        // Expel all gas from Outlet's OutletGasMix to output tile
-        var ejectedGas = outletComp.OutletGasMix.Remove(outletComp.OutletGasMix.Pressure * outletComp.OutletGasMix.Volume / Atmospherics.R);
-        if (ejectedGas.TotalMoles > 0f)
-            _atmos.Merge(outputMix, ejectedGas);
-
-        // Step 5: Calculate and supply power
-        if (TryComp<PowerSupplierComponent>(uid, out var powerSupplierComp))
-        {
-            // Calculate RPM from rotor work
-            rotor.Rpm = MathF.Min(rotorWork * RpmConversion, rotor.MaxAllowedRpm);
-
-            // Calculate power: rpm * compressor_stator_interaction * energy_rectification
-            float power = rotor.Rpm * CompressorStatorInteractionMultiplier * EnergyRectificationMultiplier;
-
-            // Update PowerSupplier
-            powerSupplierComp.Enabled = rotor.Rpm > 0f;
-            powerSupplierComp.MaxSupply = power;
-            powerSupplierComp.SupplyRampRate = 10000f; // Ramp 10 kW/s for quick response
-            powerSupplierComp.SupplyRampTolerance = 1000f; // Allow 1 kW overshoot
-
-            // Debug log for power
-            Logger.Debug($"Turbine {uid}: Rpm={rotor.Rpm:F2}, MaxSupply={power:F2}W, CurrentSupply={powerSupplierComp.CurrentSupply:F2}W");
-        }
+        // Merge to output
+        _gasOverlaySystem.UpdateSessions();
     }
 
     private void UpdateConnections(EntityUid entity, Component comp)
     {
+        // Find rotor
         EntityUid? rotorEnt = null;
         TurbineRotorComponent? rotor = null;
+        Vector2i? rotorTilePos = null; // Store rotor's tile position
 
-        // Find Rotor
         if (comp is TurbineRotorComponent rotorComp)
         {
             rotorEnt = entity;
             rotor = rotorComp;
         }
-        else if (comp is TurbineCompressorComponent || comp is TurbineOutletComponent)
+        else if ((comp is TurbineCompressorComponent || comp is TurbineOutletComponent) &&
+                TryComp<TransformComponent>(entity, out var entityXform) && entityXform.Anchored)
         {
-            // Don’t exit early if unanchored; we need to check for Rotor
-            if (!TryComp<TransformComponent>(entity, out var entityXform) || !entityXform.GridUid.HasValue)
-                return;
-
             var mapCoords = _transform.GetMapCoordinates(entity);
-            if (!_map.TryFindGridAt(mapCoords, out var gridUid, out var grid))
+            if (!_map.TryFindGridAt(mapCoords, out _, out var grid))
                 return;
 
             var entityPos = grid.WorldToTile(mapCoords.Position);
-            var directions = new[] { entityXform.LocalRotation, new Angle(entityXform.LocalRotation.Theta + Math.PI) };
+            var offset = (comp is TurbineCompressorComponent ? entityXform.LocalRotation : new Angle(entityXform.LocalRotation.Theta + Math.PI)).GetCardinalDir().ToIntVec();
+            var expectedRotorPos = entityPos + offset;
 
-            foreach (var dir in directions)
+            foreach (var neighbor in grid.GetAnchoredEntities(expectedRotorPos))
             {
-                var offset = dir.GetCardinalDir().ToIntVec();
-                var neighborPos = entityPos + offset;
-                foreach (var neighbor in grid.GetAnchoredEntities(neighborPos))
+                if (TryComp<TurbineRotorComponent>(neighbor, out var foundRotor) &&
+                    Transform(neighbor).Anchored)
                 {
-                    if (TryComp<TurbineRotorComponent>(neighbor, out var foundRotor) &&
-                        TryComp<TransformComponent>(neighbor, out var neighborXform) &&
-                        neighborXform.Anchored)
-                    {
-                        rotorEnt = neighbor;
-                        rotor = foundRotor;
-                        break;
-                    }
-                }
-                if (rotorEnt != null)
+                    rotorEnt = neighbor;
+                    rotor = foundRotor;
+                    rotorTilePos = expectedRotorPos; // Store the position
                     break;
+                }
             }
         }
 
         if (rotorEnt == null || rotor == null)
             return;
 
-        // Validate Rotor anchoring
+        // Validate rotor and grid
         var rotorXform = Transform(rotorEnt.Value);
-        if (!rotorXform.Anchored || !rotorXform.GridUid.HasValue)
+        if (!rotorXform.Anchored || !_map.TryFindGridAt(_transform.GetMapCoordinates(rotorEnt.Value), out _, out var gridComp))
         {
-            rotor.AllPartsConnected = false;
-            rotor.MaxAllowedRpm = 0;
-            rotor.MaxAllowedTemperature = 0;
-            if (TryComp<PowerSupplierComponent>(rotorEnt.Value, out var powerSupplier))
-            {
-                powerSupplier.Enabled = false;
-                powerSupplier.MaxSupply = 0f;
-            }
+            ResetRotor(rotor);
             return;
         }
 
-        var rotorMapCoords = _transform.GetMapCoordinates(rotorEnt.Value);
-        if (!_map.TryFindGridAt(rotorMapCoords, out var foundGridUid, out var gridComp))
-        {
-            rotor.AllPartsConnected = false;
-            rotor.MaxAllowedRpm = 0;
-            rotor.MaxAllowedTemperature = 0;
-            if (TryComp<PowerSupplierComponent>(rotorEnt.Value, out var powerSupplier))
-            {
-                powerSupplier.Enabled = false;
-                powerSupplier.MaxSupply = 0f;
-            }
-            return;
-        }
+        // Get rotor's tile position if not already set
+        rotorTilePos ??= gridComp.WorldToTile(rotorXform.WorldPosition);
 
-        // Calculate positions
+        // Calculate compressor and outlet positions
         var rotation = rotorXform.LocalRotation;
-        var rotorPos = gridComp.WorldToTile(rotorMapCoords.Position);
-        var compressorPos = rotorPos - rotation.GetCardinalDir().ToIntVec(); // Compressor at 180°
-        var outletPos = rotorPos + rotation.GetCardinalDir().ToIntVec();     // Outlet forward
+        var compressorPos = rotorTilePos.Value - rotation.GetCardinalDir().ToIntVec();
+        var outletPos = rotorTilePos.Value + rotation.GetCardinalDir().ToIntVec();
 
-        // Scan Compressor
+        // Scan compressor
         EntityUid? compressorEnt = null;
         foreach (var ent in gridComp.GetAnchoredEntities(compressorPos))
         {
             if (TryComp<TurbineCompressorComponent>(ent, out _) &&
-                TryComp<TransformComponent>(ent, out var xform) &&
-                xform.Anchored && // Explicit anchoring check
-                xform.LocalRotation.EqualsApprox(rotation))
+                Transform(ent).Anchored &&
+                Transform(ent).LocalRotation.EqualsApprox(rotation))
             {
                 compressorEnt = ent;
                 break;
             }
         }
 
-        // Scan Outlet
+        // Scan outlet
         EntityUid? outletEnt = null;
         foreach (var ent in gridComp.GetAnchoredEntities(outletPos))
         {
             if (TryComp<TurbineOutletComponent>(ent, out _) &&
-                TryComp<TransformComponent>(ent, out var xform) &&
-                xform.Anchored && // Explicit anchoring check
-                xform.LocalRotation.EqualsApprox(rotation))
+                Transform(ent).Anchored &&
+                Transform(ent).LocalRotation.EqualsApprox(rotation))
             {
                 outletEnt = ent;
                 break;
             }
         }
 
-        // Update Rotor
+        // Update rotor
         rotor.AllPartsConnected = compressorEnt.HasValue && outletEnt.HasValue;
         if (rotor.AllPartsConnected)
         {
-            rotor.MaxAllowedRpm = rotor.MaxRpm;
-            rotor.MaxAllowedTemperature = rotor.MaxTemperature;
+            rotor.CompressorUid = compressorEnt;
+            rotor.OutletUid = outletEnt;
         }
         else
         {
-            rotor.MaxAllowedRpm = 0;
-            rotor.MaxAllowedTemperature = 0;
-            if (TryComp<PowerSupplierComponent>(rotorEnt.Value, out var powerSupplier))
-            {
-                powerSupplier.Enabled = false;
-                powerSupplier.MaxSupply = 0f;
-            }
+            ResetRotor(rotor);
+        }
+    }
+
+    private void ResetRotor(TurbineRotorComponent rotor)
+    {
+        rotor.AllPartsConnected = false;
+        rotor.CompressorUid = null;
+        rotor.OutletUid = null;
+        if (TryComp<PowerSupplierComponent>(rotor.Owner, out var powerSupplier))
+        {
+            powerSupplier.Enabled = false;
+            powerSupplier.MaxSupply = 0f;
         }
     }
 
     private float TransferGases(GasMixture inputMix, GasMixture outputMix, float workToRemove, float intakeSize = 1f)
     {
-        // Ensure non-negative pressures
-        float PressureMax(float pressure) => MathF.Max(pressure, MinimumTurbinePressure);
+        // Ensure output pressure is at least minimum to avoid division issues
+        var outputPressure = Math.Max(outputMix.Pressure, MinimumTurbinePressure);
 
-        // Get initial output pressure
-        float outputPressure = PressureMax(outputMix.Pressure);
-
-        // Pump gas from input to output
-        float inputPressure = inputMix.Pressure * intakeSize;
-        var transferredGas = inputMix.Remove(inputPressure * inputMix.Volume / Atmospherics.R);
-        if (transferredGas.TotalMoles <= 0f)
+        // Transfer gas: Remove intakeSize fraction from input and pump to output
+        var initialMoles = outputMix.TotalMoles;
+        var targetPressure = inputMix.Pressure * intakeSize;
+        var transferred = _atmos.PumpGasTo(inputMix, outputMix, targetPressure);
+        if (!transferred || outputMix.TotalMoles <= 0)
             return 0f;
 
-        _atmos.Merge(outputMix, transferredGas);
-
-        float workDone = (float)(Math.Floor(transferredGas.TotalMoles) * Atmospherics.R * 
-                         transferredGas.Temperature * Math.Log((outputMix.Volume * PressureMax(outputMix.Pressure)) /
-                         (transferredGas.Volume * PressureMax(transferredGas.Pressure))) *
-                         WorkConversionMultiplier);
-
-        // Subtract work to remove (e.g., Compressor work for Rotor)
-        if (workToRemove > 0f)
-            workDone = MathF.Max(workDone - workToRemove, 0f);
-
-        // Compute temperature-based work cap
-        
-        float outputHeatCapacity = _atmos.GetHeatCapacity(outputMix, true);
-        if (outputHeatCapacity <= 0f)
+        // Compute transferred moles
+        var transferredMoles = Math.Max(outputMix.TotalMoles - initialMoles, 0f);
+        if (transferredMoles <= 0f)
             return 0f;
 
-        workDone = MathF.Min(workDone, (outputHeatCapacity * outputMix.Temperature - outputHeatCapacity * Atmospherics.TCMB) / HeatConversionMultiplier);
+        var transferredTemperature = inputMix.Temperature;
 
-        // Update output temperature: T₂ = (T₂ * C + work * HeatConversionMultiplier) / C
-        outputMix.Temperature = MathF.Max((outputMix.Temperature * outputHeatCapacity + workDone * HeatConversionMultiplier) / outputHeatCapacity, Atmospherics.TCMB);
+        // Calculate pressure ratio using outputMix volume and post-transfer pressure
+        var postTransferPressure = Math.Max(outputMix.Pressure, MinimumTurbinePressure);
+        var pressureRatio = postTransferPressure / outputPressure;
 
+        // Compute work done: moles * R * T * log(P_transferred / P_output) * multiplier
+        var workDone = transferredMoles * Atmospherics.R * transferredTemperature * MathF.Log(Math.Max(pressureRatio, 1f)) * WorkConversionMultiplier;
+
+        // Subtract work to remove
+        workDone = Math.Max(0f, workDone - workToRemove);
+
+        // Compute temperature-limited work
+        var outputHeatCapacity = _atmos.GetHeatCapacity(outputMix, true);
+        if (outputHeatCapacity <= 0)
+            return 0f;
+
+        // Limit work by available heat
+        workDone = Math.Min(workDone,
+            (outputHeatCapacity * outputMix.Temperature - outputHeatCapacity * Atmospherics.TCMB) / HeatConversionMultiplier);
+
+        // Update output temperature
+        outputMix.Temperature = Math.Max((outputMix.Temperature * outputHeatCapacity + workDone * HeatConversionMultiplier) / outputHeatCapacity, 0f);
         return workDone;
     }
 
-    private MapCoordinates GetInputTile(EntityUid compressor)
+    private MapCoordinates GetTile(EntityUid uid)
     {
-        var xform = Transform(compressor);
-        var dir = xform.LocalRotation;
-        var oppositeDir = new Angle(dir.Theta + Math.PI);
-        return _transform.GetMapCoordinates(compressor).Offset(oppositeDir.ToVec());
+        var xform = Transform(uid);
+        return _transform.GetMapCoordinates(uid);
     }
 
-    private MapCoordinates GetOutputTile(EntityUid outlet)
+    private float CompressGases(GasMixture inputMix, GasMixture compressorMix, TurbineRotorComponent rotor)
     {
-        var xform = Transform(outlet);
-        var dir = xform.LocalRotation;
-        return _transform.GetMapCoordinates(outlet).Offset(dir.ToVec());
+        rotor.CompressorWork = TransferGases(inputMix, compressorMix, 0f, rotor.CompressorIntakeRegulator);
+        rotor.CompressorPressure = Math.Max(compressorMix.Pressure, 0.01f);
+
+        return inputMix.Temperature;
+    }
+
+    private bool ExpelGases(GasMixture inputMix, GasMixture outputTileMix, float pressure)
+    {
+        return _atmos.PumpGasTo(inputMix, outputTileMix, pressure);
     }
 }
