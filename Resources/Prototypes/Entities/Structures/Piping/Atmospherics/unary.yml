@@ -247,7 +247,7 @@
           shader: unshaded
           map: [ "enum.LightLayers.Unshaded" ]
           color: "#990000"
-    - type: Appearance 
+    - type: Appearance
     - type: GenericVisualizer
       visuals:
        # toggle color of the unshaded light:
@@ -470,7 +470,7 @@
       map: ["enum.SolutionContainerLayers.Fill"]
       visible: false
     - state: trans
-  - type: Appearance    
+  - type: Appearance
   - type: GenericVisualizer
     visuals:
       enum.PowerDeviceVisuals.Powered:
