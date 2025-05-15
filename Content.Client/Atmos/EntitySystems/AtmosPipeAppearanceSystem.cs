@@ -40,7 +40,8 @@ public sealed class AtmosPipeAppearanceSystem : EntitySystem
         {
             for (byte i = 0; i < numberOfPipeLayers; i++)
             {
-                var layer = _sprite.LayerMapReserve((uid, sprite), (layerKey, i));
+                var layerName = layerKey.ToString() + i.ToString();
+                var layer = _sprite.LayerMapReserve((uid, sprite), layerName);
                 _sprite.LayerSetRsi((uid, sprite), layer, component.Sprite[i].RsiPath);
                 _sprite.LayerSetRsiState((uid, sprite), layer, component.Sprite[i].RsiState);
                 _sprite.LayerSetDirOffset((uid, sprite), layer, ToOffset(layerKey));
@@ -57,7 +58,9 @@ public sealed class AtmosPipeAppearanceSystem : EntitySystem
         {
             for (byte i = 0; i < numberOfPipeLayers; i++)
             {
-                if (!_sprite.LayerMapTryGet(entity.AsNullable(), (layerKey,i), out var key, false))
+                var layerName = layerKey.ToString() + i.ToString();
+
+                if (!_sprite.LayerMapTryGet(entity.AsNullable(), layerName, out var key, false))
                     continue;
 
                 var layer = sprite[key];
@@ -99,7 +102,9 @@ public sealed class AtmosPipeAppearanceSystem : EntitySystem
 
             foreach (var layerKey in Enum.GetValues<PipeConnectionLayer>())
             {
-                if (!args.Sprite.LayerMapTryGet((uid, args.Sprite), (layerKey, i), out var key, false))
+                var layerName = layerKey.ToString() + i.ToString();
+
+                if (!_sprite.LayerMapTryGet((uid, args.Sprite), layerName, out var key, false))
                     continue;
 
                 var layer = args.Sprite[key];
