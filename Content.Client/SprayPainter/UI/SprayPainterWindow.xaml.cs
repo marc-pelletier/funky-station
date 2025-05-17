@@ -15,11 +15,16 @@ public sealed partial class SprayPainterWindow : DefaultWindow
 
     public Action<ItemList.ItemListSelectedEventArgs>? OnSpritePicked;
     public Action<ItemList.ItemListSelectedEventArgs>? OnColorPicked;
-    public Dictionary<string, int> ItemColorIndex = new();
+    public Action<ItemList.ItemListSelectedEventArgs>? OnPrimaryColorPicked;
+    public Action<ItemList.ItemListSelectedEventArgs>? OnSecondaryColorPicked;
+    public Action<ItemList.ItemListSelectedEventArgs>? OnTertiaryColorPicked;
+    public Action<bool>? OnSecondaryEnabledChanged;
+    public Action<bool>? OnTertiaryEnabledChanged;
 
+    private Dictionary<string, int> ItemColorIndex = new();
     private Dictionary<string, Color> currentPalette = new();
     private const string colorLocKeyPrefix = "pipe-painter-color-";
-    private List<SprayPainterEntry> CurrentEntries = new List<SprayPainterEntry>();
+    private List<SprayPainterEntry> CurrentEntries = new();
 
     private readonly SpriteSpecifier _colorEntryIconTexture = new SpriteSpecifier.Rsi(
         new ResPath("Structures/Piping/Atmospherics/pipe.rsi"),
@@ -30,6 +35,13 @@ public sealed partial class SprayPainterWindow : DefaultWindow
         RobustXamlLoader.Load(this);
         IoCManager.InjectDependencies(this);
         _spriteSystem = _sysMan.GetEntitySystem<SpriteSystem>();
+
+        // Bind new event handlers
+        PrimaryColorList.OnItemSelected += args => OnPrimaryColorPicked?.Invoke(args);
+        SecondaryColorList.OnItemSelected += args => OnSecondaryColorPicked?.Invoke(args);
+        TertiaryColorList.OnItemSelected += args => OnTertiaryColorPicked?.Invoke(args);
+        SecondaryEnabledCheckBox.OnToggled += args => OnSecondaryEnabledChanged?.Invoke(args.Pressed);
+        TertiaryEnabledCheckBox.OnToggled += args => OnTertiaryEnabledChanged?.Invoke(args.Pressed);
     }
 
     private static string GetColorLocString(string? colorKey)
@@ -42,14 +54,16 @@ public sealed partial class SprayPainterWindow : DefaultWindow
             locString = colorKey;
 
         return locString;
-        }
+    }
 
     public string? IndexToColorKey(int index)
     {
         return (string?) ColorList[index].Metadata;
     }
 
-    public void Populate(List<SprayPainterEntry> entries, int selectedStyle, string? selectedColorKey, Dictionary<string, Color> palette)
+    public void Populate(List<SprayPainterEntry> entries, int selectedStyle, string? selectedColorKey,
+        Dictionary<string, Color> palette, string? primaryColorKey = null, string? secondaryColorKey = null,
+        string? tertiaryColorKey = null, bool secondaryEnabled = true, bool tertiaryEnabled = true)
     {
         // Only clear if the entries change. Otherwise the list would "jump" after selecting an item
         if (!CurrentEntries.Equals(entries))
@@ -62,11 +76,15 @@ public sealed partial class SprayPainterWindow : DefaultWindow
             }
         }
 
+        // Populate color lists
         if (!currentPalette.Equals(palette))
         {
             currentPalette = palette;
             ItemColorIndex.Clear();
             ColorList.Clear();
+            PrimaryColorList.Clear();
+            SecondaryColorList.Clear();
+            TertiaryColorList.Clear();
 
             foreach (var color in palette)
             {
@@ -76,11 +94,25 @@ public sealed partial class SprayPainterWindow : DefaultWindow
                 item.Metadata = color.Key;
 
                 ItemColorIndex.Add(color.Key, ColorList.IndexOf(item));
+
+                // Populate PrimaryColorList
+                var primaryItem = PrimaryColorList.AddItem(locString, _spriteSystem.Frame0(_colorEntryIconTexture));
+                primaryItem.IconModulate = color.Value;
+                primaryItem.Metadata = color.Key;
+
+                // Populate SecondaryColorList
+                var secondaryItem = SecondaryColorList.AddItem(locString, _spriteSystem.Frame0(_colorEntryIconTexture));
+                secondaryItem.IconModulate = color.Value;
+                secondaryItem.Metadata = color.Key;
+
+                // Populate TertiaryColorList
+                var tertiaryItem = TertiaryColorList.AddItem(locString, _spriteSystem.Frame0(_colorEntryIconTexture));
+                tertiaryItem.IconModulate = color.Value;
+                tertiaryItem.Metadata = color.Key;
             }
         }
 
-        // Disable event so we don't send a new event for pre-selectedStyle entry and end up in a loop
-
+        // Select main color
         if (selectedColorKey != null)
         {
             var index = ItemColorIndex[selectedColorKey];
@@ -89,6 +121,43 @@ public sealed partial class SprayPainterWindow : DefaultWindow
             ColorList.OnItemSelected += OnColorPicked;
         }
 
+        // Select primary color
+        if (primaryColorKey != null && ItemColorIndex.ContainsKey(primaryColorKey))
+        {
+            var index = ItemColorIndex[primaryColorKey];
+            PrimaryColorList.OnItemSelected -= OnPrimaryColorPicked;
+            PrimaryColorList[index].Selected = true;
+            PrimaryColorList.OnItemSelected += OnPrimaryColorPicked;
+        }
+
+        // Select secondary color
+        if (secondaryColorKey != null && ItemColorIndex.ContainsKey(secondaryColorKey))
+        {
+            var index = ItemColorIndex[secondaryColorKey];
+            SecondaryColorList.OnItemSelected -= OnSecondaryColorPicked;
+            SecondaryColorList[index].Selected = true;
+            SecondaryColorList.OnItemSelected += OnSecondaryColorPicked;
+        }
+
+        // Select tertiary color
+        if (tertiaryColorKey != null && ItemColorIndex.ContainsKey(tertiaryColorKey))
+        {
+            var index = ItemColorIndex[tertiaryColorKey];
+            TertiaryColorList.OnItemSelected -= OnTertiaryColorPicked;
+            TertiaryColorList[index].Selected = true;
+            TertiaryColorList.OnItemSelected += OnTertiaryColorPicked;
+        }
+
+        // Update checkboxes
+        SecondaryEnabledCheckBox.OnToggled -= args => OnSecondaryEnabledChanged?.Invoke(args.Pressed);
+        SecondaryEnabledCheckBox.Pressed = secondaryEnabled;
+        SecondaryEnabledCheckBox.OnToggled += args => OnSecondaryEnabledChanged?.Invoke(args.Pressed);
+
+        TertiaryEnabledCheckBox.OnToggled -= args => OnTertiaryEnabledChanged?.Invoke(args.Pressed);
+        TertiaryEnabledCheckBox.Pressed = tertiaryEnabled;
+        TertiaryEnabledCheckBox.OnToggled += args => OnTertiaryEnabledChanged?.Invoke(args.Pressed);
+
+        // Select sprite
         SpriteList.OnItemSelected -= OnSpritePicked;
         SpriteList[selectedStyle].Selected = true;
         SpriteList.OnItemSelected += OnSpritePicked;

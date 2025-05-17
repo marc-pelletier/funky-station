@@ -10,11 +10,19 @@
     - type: Transform
       noRot: true
     - type: Sprite
-      sprite: Structures/Storage/canister.rsi
+      sprite: _Funkystation/Structures/Storage/canister.rsi
       noRot: true
       layers:
         - state: grey
+          map: ["enum.GasCanisterVisualLayers.Canister"]
+        - state: double_stripe
+          map: ["enum.GasCanisterVisualLayers.DoubleStripe"]
     - type: Appearance
+    - type: GasCanisterColor
+      primaryColor: "#B05EB4"
+      secondaryColor: "#B05EB4"
+      tertiaryColor: "#B05EB4"
+    - type: GasCanisterColorVisuals
     - type: GenericVisualizer
       visuals:
         enum.AnchorVisuals.Anchored:
@@ -114,9 +122,6 @@
   id: StorageCanister
   name: storage canister
   components:
-    - type: Sprite
-      layers:
-        - state: yellow
     - type: GasCanister
       gasMixture:
         volume: 1000
@@ -163,9 +168,6 @@
   name: air canister
   description: A canister that can contain any type of gas. This one is supposed to contain air mixture. It can be attached to connector ports using a wrench.
   components:
-  - type: Sprite
-    layers:
-      - state: grey
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -203,9 +205,6 @@
   name: oxygen canister
   description: A canister that can contain any type of gas. This one is supposed to contain oxygen. It can be attached to connector ports using a wrench.
   components:
-  - type: Sprite
-    layers:
-      - state: blue
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -257,9 +256,6 @@
   name: nitrogen canister
   description: A canister that can contain any type of gas. This one is supposed to contain nitrogen. It can be attached to connector ports using a wrench.
   components:
-    - type: Sprite
-      layers:
-        - state: red
     - type: GasCanister
       gasMixture:
         volume: 1000
@@ -313,9 +309,6 @@
   name: carbon dioxide canister
   description: A canister that can contain any type of gas. This one is supposed to contain carbon dioxide. It can be attached to connector ports using a wrench.
   components:
-    - type: Sprite
-      layers:
-        - state: black
     - type: GasCanister
       gasMixture:
         volume: 1000
@@ -373,9 +366,6 @@
   name: plasma canister
   description: A canister that can contain any type of gas. This one is supposed to contain plasma. It can be attached to connector ports using a wrench.
   components:
-    - type: Sprite
-      layers:
-        - state: orange
     - type: GasCanister
       gasMixture:
         volume: 1000
@@ -417,9 +407,6 @@
   name: tritium canister
   description: A canister that can contain any type of gas. This one is supposed to contain tritium. It can be attached to connector ports using a wrench.
   components:
-    - type: Sprite
-      layers:
-        - state: green
     - type: GasCanister
       gasMixture:
         volume: 1000
@@ -462,9 +449,6 @@
   name: water vapor canister
   description: A canister that can contain any type of gas. This one is supposed to contain water vapor. It can be attached to connector ports using a wrench.
   components:
-    - type: Sprite
-      layers:
-        - state: water_vapor
     - type: GasCanister
       gasMixture:
         volume: 1000
@@ -506,9 +490,6 @@
   name: ammonia canister
   description: A canister that can contain any type of gas. This one is supposed to contain ammonia. It can be attached to connector ports using a wrench.
   components:
-    - type: Sprite
-      layers:
-        - state: greenys
     - type: GasCanister
       gasMixture:
         volume: 1000
@@ -553,9 +534,6 @@
   name: nitrous oxide canister
   description: A canister that can contain any type of gas. This one is supposed to contain nitrous oxide. It can be attached to connector ports using a wrench.
   components:
-    - type: Sprite
-      layers:
-        - state: redws
     - type: GasCanister
       gasMixture:
         volume: 1000
@@ -599,9 +577,6 @@
   name: frezon canister
   description: A canister that can contain any type of gas. This one is supposed to contain frezon. It can be attached to connector ports using a wrench.
   components:
-  - type: Sprite
-    layers:
-    - state: frezon
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -648,9 +623,6 @@
   id: BZCanister
   name: bz canister
   components:
-  - type: Sprite
-    layers:
-    - state: purple
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -697,9 +669,6 @@
   id: HealiumCanister
   name: healium canister
   components:
-  - type: Sprite
-    layers:
-    - state: healium
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -747,9 +716,6 @@
   id: NitriumCanister
   name: nitrium canister
   components:
-  - type: Sprite
-    layers:
-    - state: brown
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -798,9 +764,6 @@
   id: PluoxiumCanister
   name: pluoxium canister
   components:
-  - type: Sprite
-    layers:
-    - state: darkblue
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -850,9 +813,6 @@
   id: HydrogenCanister
   name: hydrogen canister
   components:
-  - type: Sprite
-    layers:
-    - state: white
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -903,9 +863,6 @@
   id: HyperNobliumCanister
   name: hyper-noblium canister
   components:
-  - type: Sprite
-    layers:
-    - state: nob
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -957,9 +914,6 @@
   id: ProtoNitrateCanister
   name: proto-nitrate canister
   components:
-  - type: Sprite
-    layers:
-    - state: proto_nitrate
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -1012,9 +966,6 @@
   id: ZaukerCanister
   name: zauker canister
   components:
-  - type: Sprite
-    layers:
-    - state: zauker
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -1068,9 +1019,6 @@
   id: HalonCanister
   name: halon canister
   components:
-  - type: Sprite
-    layers:
-    - state: halon
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -1125,9 +1073,6 @@
   id: HeliumCanister
   name: helium canister
   components:
-  - type: Sprite
-    layers:
-    - state: helium
   - type: GasCanister
     gasMixture:
       volume: 1000
@@ -1183,9 +1128,6 @@
   id: AntiNobliumCanister
   name: anti-noblium canister
   components:
-  - type: Sprite
-    layers:
-    - state: antinob
   - type: GasCanister
     gasMixture:
       volume: 1000

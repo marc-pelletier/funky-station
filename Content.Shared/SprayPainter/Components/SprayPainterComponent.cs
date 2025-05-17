@@ -30,8 +30,37 @@ public sealed partial class SprayPainterComponent : Component
 
     /// <summary>
     /// Airlock style index selected.
-    /// After prototype reload this might not be the same style but it will never be out of bounds.
     /// </summary>
     [DataField, AutoNetworkedField]
     public int Index;
+
+    /// <summary>
+    /// Primary color key selected for custom painting (always enabled).
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public string? PrimaryColor;
+
+    /// <summary>
+    /// Secondary color key selected for custom painting.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public string? SecondaryColor;
+
+    /// <summary>
+    /// Tertiary color key selected for custom painting.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public string? TertiaryColor;
+
+    /// <summary>
+    /// Whether the secondary color is enabled.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public bool SecondaryEnabled = true;
+
+    /// <summary>
+    /// Whether the tertiary color is enabled.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public bool TertiaryEnabled = true;
 }

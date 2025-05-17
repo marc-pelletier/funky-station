@@ -71,3 +71,75 @@ public sealed partial class SprayPainterPipeDoAfterEvent : DoAfterEvent
 
     public override DoAfterEvent Clone() => this;
 }
+
+[Serializable, NetSerializable]
+public sealed partial class SprayPainterCanisterDoAfterEvent : SimpleDoAfterEvent
+{
+    public readonly Color PrimaryColor;
+    public readonly Color SecondaryColor;
+    public readonly Color TertiaryColor;
+    public readonly bool SecondaryEnabled;
+
+    public SprayPainterCanisterDoAfterEvent(Color primaryColor, Color secondaryColor, Color tertiaryColor, bool secondaryEnabled)
+    {
+        PrimaryColor = primaryColor;
+        SecondaryColor = secondaryColor;
+        TertiaryColor = tertiaryColor;
+        SecondaryEnabled = secondaryEnabled;
+    }
+}
+
+[Serializable, NetSerializable]
+public sealed class SprayPainterPrimaryColorPickedMessage : BoundUserInterfaceMessage
+{
+    public readonly string? Key;
+
+    public SprayPainterPrimaryColorPickedMessage(string? key)
+    {
+        Key = key;
+    }
+}
+
+[Serializable, NetSerializable]
+public sealed class SprayPainterSecondaryColorPickedMessage : BoundUserInterfaceMessage
+{
+    public readonly string? Key;
+
+    public SprayPainterSecondaryColorPickedMessage(string? key)
+    {
+        Key = key;
+    }
+}
+
+[Serializable, NetSerializable]
+public sealed class SprayPainterTertiaryColorPickedMessage : BoundUserInterfaceMessage
+{
+    public readonly string? Key;
+
+    public SprayPainterTertiaryColorPickedMessage(string? key)
+    {
+        Key = key;
+    }
+}
+
+[Serializable, NetSerializable]
+public sealed class SprayPainterSecondaryEnabledChangedMessage : BoundUserInterfaceMessage
+{
+    public readonly bool Enabled;
+
+    public SprayPainterSecondaryEnabledChangedMessage(bool enabled)
+    {
+        Enabled = enabled;
+    }
+}
+
+[Serializable, NetSerializable]
+public sealed class SprayPainterTertiaryEnabledChangedMessage : BoundUserInterfaceMessage
+{
+    public readonly bool Enabled;
+
+    public SprayPainterTertiaryEnabledChangedMessage(bool enabled)
+    {
+        Enabled = enabled;
+    }
+}

@@ -12,18 +12,14 @@ using System.Linq;
 
 namespace Content.Shared.SprayPainter;
 
-/// <summary>
-/// System for painting airlocks using a spray painter.
-/// Pipes are handled serverside since AtmosPipeColorSystem is server only.
-/// </summary>
 public abstract class SharedSprayPainterSystem : EntitySystem
 {
     [Dependency] protected readonly IPrototypeManager Proto = default!;
-    [Dependency] private   readonly ISharedAdminLogManager _adminLogger = default!;
+    [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
     [Dependency] protected readonly SharedAppearanceSystem Appearance = default!;
     [Dependency] protected readonly SharedAudioSystem Audio = default!;
     [Dependency] protected readonly SharedDoAfterSystem DoAfter = default!;
-    [Dependency] private   readonly SharedPopupSystem _popup = default!;
+    [Dependency] private readonly SharedPopupSystem _popup = default!;
 
     public List<AirlockStyle> Styles { get; private set; } = new();
     public List<AirlockGroupPrototype> Groups { get; private set; } = new();
@@ -43,6 +39,11 @@ public abstract class SharedSprayPainterSystem : EntitySystem
         {
             subs.Event<SprayPainterSpritePickedMessage>(OnSpritePicked);
             subs.Event<SprayPainterColorPickedMessage>(OnColorPicked);
+            subs.Event<SprayPainterPrimaryColorPickedMessage>(OnPrimaryColorPicked);
+            subs.Event<SprayPainterSecondaryColorPickedMessage>(OnSecondaryColorPicked);
+            subs.Event<SprayPainterTertiaryColorPickedMessage>(OnTertiaryColorPicked);
+            subs.Event<SprayPainterSecondaryEnabledChangedMessage>(OnSecondaryEnabledChanged);
+            subs.Event<SprayPainterTertiaryEnabledChangedMessage>(OnTertiaryEnabledChanged);
         });
 
         SubscribeLocalEvent<PaintableAirlockComponent, InteractUsingEvent>(OnAirlockInteract);
@@ -56,6 +57,9 @@ public abstract class SharedSprayPainterSystem : EntitySystem
             return;
 
         SetColor(ent, ent.Comp.ColorPalette.First().Key);
+        ent.Comp.PrimaryColor = ent.Comp.ColorPalette.First().Key;
+        ent.Comp.SecondaryColor = ent.Comp.ColorPalette.First().Key;
+        ent.Comp.TertiaryColor = ent.Comp.ColorPalette.First().Key;
     }
 
     private void OnDoorDoAfter(Entity<SprayPainterComponent> ent, ref SprayPainterDoorDoAfterEvent args)
@@ -84,6 +88,45 @@ public abstract class SharedSprayPainterSystem : EntitySystem
     private void OnColorPicked(Entity<SprayPainterComponent> ent, ref SprayPainterColorPickedMessage args)
     {
         SetColor(ent, args.Key);
+    }
+
+    private void OnPrimaryColorPicked(Entity<SprayPainterComponent> ent, ref SprayPainterPrimaryColorPickedMessage args)
+    {
+        if (args.Key != null && ent.Comp.ColorPalette.ContainsKey(args.Key))
+        {
+            ent.Comp.PrimaryColor = args.Key;
+            Dirty(ent, ent.Comp);
+        }
+    }
+
+    private void OnSecondaryColorPicked(Entity<SprayPainterComponent> ent, ref SprayPainterSecondaryColorPickedMessage args)
+    {
+        if (args.Key != null && ent.Comp.ColorPalette.ContainsKey(args.Key))
+        {
+            ent.Comp.SecondaryColor = args.Key;
+            Dirty(ent, ent.Comp);
+        }
+    }
+
+    private void OnTertiaryColorPicked(Entity<SprayPainterComponent> ent, ref SprayPainterTertiaryColorPickedMessage args)
+    {
+        if (args.Key != null && ent.Comp.ColorPalette.ContainsKey(args.Key))
+        {
+            ent.Comp.TertiaryColor = args.Key;
+            Dirty(ent, ent.Comp);
+        }
+    }
+
+    private void OnSecondaryEnabledChanged(Entity<SprayPainterComponent> ent, ref SprayPainterSecondaryEnabledChangedMessage args)
+    {
+        ent.Comp.SecondaryEnabled = args.Enabled;
+        Dirty(ent, ent.Comp);
+    }
+
+    private void OnTertiaryEnabledChanged(Entity<SprayPainterComponent> ent, ref SprayPainterTertiaryEnabledChangedMessage args)
+    {
+        ent.Comp.TertiaryEnabled = args.Enabled;
+        Dirty(ent, ent.Comp);
     }
 
     private void OnSpritePicked(Entity<SprayPainterComponent> ent, ref SprayPainterSpritePickedMessage args)
@@ -138,7 +181,6 @@ public abstract class SharedSprayPainterSystem : EntitySystem
 
         args.Handled = true;
 
-        // Log the attempt
         _adminLogger.Add(LogType.Action, LogImpact.Low, $"{ToPrettyString(args.User):user} is painting {ToPrettyString(ent):target} to '{style.Name}' at {Transform(ent).Coordinates:targetlocation}");
     }
 
@@ -153,7 +195,6 @@ public abstract class SharedSprayPainterSystem : EntitySystem
         Groups.Clear();
         CacheStyles();
 
-        // style index might be invalid now so check them all
         var max = Styles.Count - 1;
         var query = AllEntityQuery<SprayPainterComponent>();
         while (query.MoveNext(out var uid, out var comp))
@@ -168,7 +209,6 @@ public abstract class SharedSprayPainterSystem : EntitySystem
 
     protected virtual void CacheStyles()
     {
-        // collect every style's name
         var names = new SortedSet<string>();
         foreach (var group in Proto.EnumeratePrototypes<AirlockGroupPrototype>())
         {
@@ -179,7 +219,6 @@ public abstract class SharedSprayPainterSystem : EntitySystem
             }
         }
 
-        // get their department ids too for the final style list
         var departments = Proto.Index<AirlockDepartmentsPrototype>(Departments);
         Styles.Capacity = names.Count;
         foreach (var name in names)

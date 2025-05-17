@@ -22,10 +22,25 @@ public sealed class SprayPainterBoundUserInterface : BoundUserInterface
 
         _window.OnSpritePicked = OnSpritePicked;
         _window.OnColorPicked = OnColorPicked;
+        _window.OnPrimaryColorPicked = OnPrimaryColorPicked;
+        _window.OnSecondaryColorPicked = OnSecondaryColorPicked;
+        _window.OnTertiaryColorPicked = OnTertiaryColorPicked;
+        _window.OnSecondaryEnabledChanged = OnSecondaryEnabledChanged;
+        _window.OnTertiaryEnabledChanged = OnTertiaryEnabledChanged;
 
         if (EntMan.TryGetComponent(Owner, out SprayPainterComponent? comp))
         {
-            _window.Populate(EntMan.System<SprayPainterSystem>().Entries, comp.Index, comp.PickedColor, comp.ColorPalette);
+            _window.Populate(
+                EntMan.System<SprayPainterSystem>().Entries,
+                comp.Index,
+                comp.PickedColor,
+                comp.ColorPalette,
+                comp.PrimaryColor,
+                comp.SecondaryColor,
+                comp.TertiaryColor,
+                comp.SecondaryEnabled,
+                comp.TertiaryEnabled
+            );
         }
     }
 
@@ -38,5 +53,33 @@ public sealed class SprayPainterBoundUserInterface : BoundUserInterface
     {
         var key = _window?.IndexToColorKey(args.ItemIndex);
         SendMessage(new SprayPainterColorPickedMessage(key));
+    }
+
+    private void OnPrimaryColorPicked(ItemList.ItemListSelectedEventArgs args)
+    {
+        var key = _window?.IndexToColorKey(args.ItemIndex);
+        SendMessage(new SprayPainterPrimaryColorPickedMessage(key));
+    }
+
+    private void OnSecondaryColorPicked(ItemList.ItemListSelectedEventArgs args)
+    {
+        var key = _window?.IndexToColorKey(args.ItemIndex);
+        SendMessage(new SprayPainterSecondaryColorPickedMessage(key));
+    }
+
+    private void OnTertiaryColorPicked(ItemList.ItemListSelectedEventArgs args)
+    {
+        var key = _window?.IndexToColorKey(args.ItemIndex);
+        SendMessage(new SprayPainterTertiaryColorPickedMessage(key));
+    }
+
+    private void OnSecondaryEnabledChanged(bool enabled)
+    {
+        SendMessage(new SprayPainterSecondaryEnabledChangedMessage(enabled));
+    }
+
+    private void OnTertiaryEnabledChanged(bool enabled)
+    {
+        SendMessage(new SprayPainterTertiaryEnabledChangedMessage(enabled));
     }
 }
