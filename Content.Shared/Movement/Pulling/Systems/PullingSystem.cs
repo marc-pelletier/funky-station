@@ -145,7 +145,7 @@ public sealed class PullingSystem : EntitySystem
 
     private void OnPullableContainerInsert(Entity<PullableComponent> ent, ref EntGotInsertedIntoContainerMessage args)
     {
-        // Funky - bugfix for issue #134
+        // Funky - prevent potential crashes when picking up two handed items being pulled by users tail
         if (ent.Comp.Puller == args.Container.Owner && TryComp<PullerComponent>(ent.Comp.Puller, out var pullerComp) && !pullerComp.NeedsHands)
             return;
         // Funky - end of changes
