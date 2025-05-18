@@ -145,6 +145,11 @@ public sealed class PullingSystem : EntitySystem
 
     private void OnPullableContainerInsert(Entity<PullableComponent> ent, ref EntGotInsertedIntoContainerMessage args)
     {
+        // Funky - bugfix for issue #134
+        if (ent.Comp.Puller == args.Container.Owner && TryComp<PullerComponent>(ent.Comp.Puller, out var pullerComp) && !pullerComp.NeedsHands)
+            return;
+        // Funky - end of changes
+
         TryStopPull(ent.Owner, ent.Comp);
     }
 
