@@ -47,7 +47,7 @@ public sealed class AtmosPipeAppearanceSystem : EntitySystem
 
         // get connected entities
         var anyPipeNodes = false;
-        HashSet<(EntityUid, byte)> connected = new();
+        HashSet<(EntityUid, AtmosPipeLayer)> connected = new();
 
         foreach (var node in container.Nodes.Values)
         {
@@ -74,11 +74,13 @@ public sealed class AtmosPipeAppearanceSystem : EntitySystem
 
         foreach (var (neighbour, pipeLayer) in connected)
         {
-            if (pipeLayer >= numberOfPipeLayers)
+            var pipeIndex = (int)pipeLayer;
+
+            if (pipeIndex >= numberOfPipeLayers)
                 continue;
 
             var otherTile = _map.TileIndicesFor(xform.GridUid.Value, grid, Transform(neighbour).Coordinates);
-            var pipeLayerDirections = connectedDirections[pipeLayer];
+            var pipeLayerDirections = connectedDirections[pipeIndex];
 
             pipeLayerDirections |= (otherTile - tile) switch
             {
@@ -89,7 +91,7 @@ public sealed class AtmosPipeAppearanceSystem : EntitySystem
                 _ => PipeDirection.None
             };
 
-            connectedDirections[pipeLayer] = pipeLayerDirections;
+            connectedDirections[pipeIndex] = pipeLayerDirections;
         }
 
         // Convert the pipe direction array into a single int for serialization

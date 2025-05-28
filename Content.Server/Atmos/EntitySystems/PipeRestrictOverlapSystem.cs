@@ -13,6 +13,7 @@ using Content.Server.NodeContainer;
 using Content.Server.NodeContainer.Nodes;
 using Content.Server.Popups;
 using Content.Shared.Atmos;
+using Content.Shared.Atmos.Components;
 using Content.Shared.CCVar;
 using Content.Shared.Construction.Components;
 using JetBrains.Annotations;
@@ -209,7 +210,7 @@ public sealed class PipeRestrictOverlapSystem : EntitySystem
 
         return (StrictPipeStacking ? false : ((takenDirs & entDirsCollapsed) == entDirsCollapsed), takenDirs);
 
-        IEnumerable<(PipeDirection, int)> GetAllDirectionsAndLayers(Entity<NodeContainerComponent, TransformComponent> pipe)
+        IEnumerable<(PipeDirection, AtmosPipeLayer)> GetAllDirectionsAndLayers(Entity<NodeContainerComponent, TransformComponent> pipe)
         {
             foreach (var node in pipe.Comp1.Nodes.Values)
             {
