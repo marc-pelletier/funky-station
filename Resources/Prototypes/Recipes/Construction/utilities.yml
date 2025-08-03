@@ -444,6 +444,9 @@
   - GasPipeHalf
   - GasPipeHalfAlt1
   - GasPipeHalfAlt2
+  icon:
+    sprite: Structures/Piping/Atmospherics/pipe.rsi
+    state: pipeHalf
   
 - type: construction
   name: gas pipe half
@@ -491,6 +494,9 @@
   - GasPipeStraight
   - GasPipeStraightAlt1
   - GasPipeStraightAlt2
+  icon:
+    sprite: Structures/Piping/Atmospherics/pipe.rsi
+    state: pipeStraight
   
 - type: construction
   name: gas pipe straight
@@ -538,6 +544,9 @@
   - GasPipeBend
   - GasPipeBendAlt1
   - GasPipeBendAlt2
+  icon:
+    sprite: Structures/Piping/Atmospherics/pipe.rsi
+    state: pipeBend
   
 - type: construction
   name: gas pipe bend
@@ -585,6 +594,9 @@
   - GasPipeTJunction
   - GasPipeTJunctionAlt1
   - GasPipeTJunctionAlt2
+  icon:
+    sprite: Structures/Piping/Atmospherics/pipe.rsi
+    state: pipeTJunction
   
 - type: construction
   name: gas pipe T junction
@@ -632,6 +644,9 @@
   - GasPipeFourway
   - GasPipeFourwayAlt1
   - GasPipeFourwayAlt2
+  icon:
+    sprite: Structures/Piping/Atmospherics/pipe.rsi
+    state: pipeFourway
   
 - type: construction
   name: gas pipe fourway
@@ -675,6 +690,9 @@
   category: construction-category-utilities
   placementMode: SnapgridCenter
   canBuildInImpassable: true
+  icon:
+    sprite: Structures/Piping/Atmospherics/manifold.rsi
+    state: pipeManifold
 
 # ATMOS UNARY
 - type: construction

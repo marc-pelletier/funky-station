@@ -17,7 +17,6 @@ public sealed partial class AtmosPipeLayersSystem : SharedAtmosPipeLayersSystem
     [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
     [Dependency] private readonly IReflectionManager _reflection = default!;
     [Dependency] private readonly IResourceCache _resourceCache = default!;
-    [Dependency] private readonly SpriteSystem _sprite = default!;
 
     public override void Initialize()
     {
@@ -34,7 +33,7 @@ public sealed partial class AtmosPipeLayersSystem : SharedAtmosPipeLayersSystem
         if (_appearance.TryGetData<string>(ent, AtmosPipeLayerVisuals.Sprite, out var spriteRsi) &&
             _resourceCache.TryGetResource(SpriteSpecifierSerializer.TextureRoot / spriteRsi, out RSIResource? resource))
         {
-            _sprite.SetBaseRsi((ent, sprite), resource.RSI);
+            sprite.BaseRSI = resource.RSI;
         }
 
         if (_appearance.TryGetData<Dictionary<string, string>>(ent, AtmosPipeLayerVisuals.SpriteLayers, out var pipeState))
@@ -42,9 +41,9 @@ public sealed partial class AtmosPipeLayersSystem : SharedAtmosPipeLayersSystem
             foreach (var (layerKey, rsiPath) in pipeState)
             {
                 if (TryParseKey(layerKey, out var @enum))
-                    _sprite.LayerSetRsi((ent, sprite), @enum, new ResPath(rsiPath));
+                    sprite.LayerSetRSI(@enum, new ResPath(rsiPath));
                 else
-                    _sprite.LayerSetRsi((ent, sprite), layerKey, new ResPath(rsiPath));
+                    sprite.LayerSetRSI(layerKey, new ResPath(rsiPath));
             }
         }
     }

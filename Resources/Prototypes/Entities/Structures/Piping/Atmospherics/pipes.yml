@@ -126,9 +126,6 @@
         Primary: Structures/Piping/Atmospherics/pipe.rsi
         Secondary: Structures/Piping/Atmospherics/pipe_alt1.rsi
         Tertiary: Structures/Piping/Atmospherics/pipe_alt2.rsi
-        - Structures/Piping/Atmospherics/pipe.rsi
-        - Structures/Piping/Atmospherics/pipe_alt1.rsi
-        - Structures/Piping/Atmospherics/pipe_alt2.rsi
   
 # Goobstation - Allow device-on-pipe stacking
 - type: entity
